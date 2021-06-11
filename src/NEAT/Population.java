@@ -42,7 +42,6 @@ public class Population{
 		for(int i = 0; i < size; i++) {
 			players.add(new Player(ins, outs));
 			players.get(i).getBrain().buildNetwork();
-			System.out.println("Built Player Number: " + i);
 		}
 		history = players.get(0).getBrain().buildHistory();
 		speciate();
@@ -126,6 +125,7 @@ public class Population{
 			Species s = species.get(j);
 			s.sort();
 			size = s.getSpeciesPlayer().size();
+			
 			if(s.getSpecAge() < 10) { // only cull the bottom 25% to allow species time to evolve
 				start = size * 3 / 4;
 			} else if(s.getSpecStale() > 15) { // if there have been no improvements, kill the whole species
@@ -133,22 +133,25 @@ public class Population{
 			} else { // cull the bottom 50%
 				start = size / 2;
 			}
-			for(int i = 0; i < size-start; i++) {
-				p = s.getSpeciesPlayer().get(size-start-1);
+			
+			int num2remove = size - start;
+			for(int i = 0; i < num2remove; i++) {
+				if(size==1) break;
+				p = s.getSpeciesPlayer().get(size-1-i);
 				s.getSpeciesPlayer().remove(p);
 				players.remove(p);
 			}
-			if(start == 0) { // remove the species from the list if it was entirely culled
+			if(start == 0 && size!=1) { // remove the species from the list if it was entirely culled
 				species.remove(s);
 				j--;
 			} else {
-				for(int i = 0; i < size-start-1; i++) {
+				for(int i = 0; i < size-start; i++) {
 					p = s.reproduce();
 					s.getSpeciesPlayer().add(p);
 					players.add(p);
-					s.setSpecAge(s.getSpecAge()+1);
 				}
 			}
+			s.setSpecAge(s.getSpecAge()+1);
 		}
 	}
 	
@@ -162,6 +165,8 @@ public class Population{
 	public void resetFitness(){
 		for(Player p:players){
 			p.setFitness(0d);
+			p.setLives(10);
+			p.setLiving(true);
 		}
 	}
 	

@@ -261,6 +261,7 @@ public class Genome {
                 n.setLayer(n.getLayer() + 1);
             }
         }
+        layers++;
     }
     
     /**

@@ -8,9 +8,9 @@ public class Main{
 	public static void main(String[] args){
 		
 		Checkerboard board;
-		Population pop = new Population(4,2,50);
+		Population pop = new Population(4,2,10);
 		int generation = 0;
-		while(generation<20){
+		while(generation<200){
 			
 			board = new Checkerboard(generation);
 			int boardCount = 0;

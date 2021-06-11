@@ -138,11 +138,9 @@ public class Player{
 		 network a bonus fitness of 50. This significantly rewards networks
 		 that can correctly identify a board.*/
 		if(checker){
-			fitness += Math.pow(outputs[1]*10, 2);
-			fitness += Math.pow((1-outputs[0])*10,2);
+			fitness += Math.pow((outputs[1] - outputs[0])*10,2);
 		}else{
-			fitness += Math.pow(outputs[0]*10, 2);
-			fitness += Math.pow((1-outputs[1])*10,2);
+			fitness += Math.pow((outputs[0]-outputs[1])*10,2);
 		}
 	}
 	
@@ -161,6 +159,10 @@ public class Player{
 	public Player crossOver(Player b){
 		Genome newG = brain.crossOver(b.getBrain());
 		return new Player(newG);
+	}
+	
+	public void setLives(int i){
+		lives = i;
 	}
 	
 	public Genome getBrain(){

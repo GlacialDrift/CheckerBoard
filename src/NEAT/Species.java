@@ -34,6 +34,7 @@ public class Species{
 	
 	public Species(int sID, Player r){
 		specID = sID;
+		specAge = 0;
 		reference = r;
 		best = r;
 		bestFitness = r.getFitness();
