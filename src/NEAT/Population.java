@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import Checkerboard.*;
-import NEAT.*;
 
 public class Population{
 	

@@ -1,6 +1,5 @@
 package Checkerboard;
 
-import java.util.concurrent.ThreadLocalRandom;
 import NEAT.*;
 
 public class Main{

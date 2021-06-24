@@ -29,128 +29,144 @@ package NEAT;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-public class Gene {
-    
-    /**
-     * object variables
-     */
-    private final Node fromNode;
-    private final Node toNode;
-    private int geneID;
-    private boolean enabled;
-    private double weight;
-    private boolean largestNode;
-    
-    /**
-     * Constructor
-     * @param from the node from which this connection originates
-     * @param to   the node to which this connection transfers information
-     * @param ID   the unique ID for this connection
-     * @param w    the weight associated with this node (-1 to 1);
-     */
-    public Gene(Node from, Node to, int ID, double w) {
-        fromNode = from;
-        toNode = to;
-        geneID = ID;
-        weight = w;
-        enabled = true;
-        largestNode = false;
-    }
-    
-    public Gene copy() {
-        Gene g = new Gene(fromNode, toNode, geneID, weight);
-        g.setLargestNode(largestNode);
-        return g;
-    }
-    
-    /**
-     * mutate the weight of this gene.
-     * 5% chance of random mutation
-     * 45% chance of small mutation
-     * 20% chance of re-enabling this connection IF it is currently disabled
-     */
-    public void mutateWeight() {
-        double t = ThreadLocalRandom.current().nextDouble();
-        if (t < 0.05) {
-            weight = ThreadLocalRandom.current().nextDouble(-1, 1);
-        } else if (t < 0.5) {
-            weight += ThreadLocalRandom.current().nextGaussian() / 30;
-            if (weight > 1) weight = 1D;
-            if (weight < -1) weight = -1D;
-        } else if (t > 0.8) {
-            if (!isEnabled()) {
-                toggleEnabled();
-            }
-        }
-        if(Math.abs(weight)<0.001) weight = 0d;
-    }
-    
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
-    public void setEnabled(boolean a) {
-        enabled = a;
-    }
-    
-    public void toggleEnabled() {
-        enabled = !enabled;
-    }
-    
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        result = getFromNode().hashCode();
-        result = 31 * result + getToNode().hashCode();
-        result = 31 * result + getGeneID();
-        result = 31 * result + (isEnabled() ? 1 : 0);
-        temp = Double.doubleToLongBits(getWeight());
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (isLargestNode() ? 1 : 0);
-        return result;
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        
-        Gene gene = (Gene) o;
-        
-        if (getGeneID() != gene.getGeneID()) return false;
-        if (isEnabled() != gene.isEnabled()) return false;
-        if (Double.compare(gene.getWeight(), getWeight()) != 0) return false;
-        if (isLargestNode() != gene.isLargestNode()) return false;
-        if (!getFromNode().equals(gene.getFromNode())) return false;
-        return getToNode().equals(gene.getToNode());
-    }
-    
-    public int getGeneID() {
-        return geneID;
-    }
-    
-    public void setGeneID(int i) {
-        geneID = i;
-    }
-    
-    public double getWeight() {
-        return weight;
-    }
-    
-    public Node getFromNode() {
-        return fromNode;
-    }
-    
-    public Node getToNode() {
-        return toNode;
-    }
-    
-    public boolean isLargestNode() {
-        return largestNode;
-    }
-    
-    public void setLargestNode(boolean largestNode) {
-        this.largestNode = largestNode;
-    }
+/**
+ * This gene class represents the connections between each node in a network.
+ * Each gene has a specified fromNode and toNode which do not change. Each gene
+ * has a unique geneID for identification and evolutionary record-keeping. A
+ * boolean value represents whether this gene outputs to the "largest" node,
+ * i.e. the node in the network with the largest nodeID. This is also for
+ * evolutionary record-keeping.
+ * <p>
+ * Each gene has a boolean "enabled" value and a weight (-1,1). This allows for
+ * genes to be deactivated when they are "replaced" in a topology change of the
+ * network. The weight allows for scaling and inverting of a nodes output.
+ */
+
+public class Gene{
+	
+	private final Node fromNode;
+	private final Node toNode;
+	private int geneID;
+	private boolean enabled;
+	private double weight;
+	private boolean largestNode;
+	
+	/**
+	 * Constructor
+	 *
+	 * @param from the node from which this connection originates
+	 * @param to   the node to which this connection transfers information
+	 * @param ID   the unique ID for this connection
+	 * @param w    the weight associated with this node (-1 to 1);
+	 */
+	public Gene(Node from, Node to, int ID, double w){
+		fromNode = from;
+		toNode = to;
+		geneID = ID;
+		weight = w;
+		enabled = true;
+		largestNode = false;
+	}
+	
+	/**
+	 * Create a copy of the gene
+	 *
+	 * @return the copied gene
+	 */
+	public Gene copy(){
+		Gene g = new Gene(fromNode, toNode, geneID, weight);
+		g.setLargestNode(largestNode);
+		return g;
+	}
+	
+	/**
+	 * mutate the weight of this gene.
+	 * 5% chance of random mutation
+	 * 45% chance of small mutation
+	 * 20% chance of re-enabling this connection only it is currently disabled
+	 */
+	public void mutateWeight(){
+		double t = ThreadLocalRandom.current().nextDouble();
+		if(t < 0.05) {
+			weight = ThreadLocalRandom.current().nextDouble(-1, 1);
+		} else if(t < 0.5) {
+			weight += ThreadLocalRandom.current().nextGaussian() / 30;
+			if(weight > 1) weight = 1D;
+			if(weight < -1) weight = -1D;
+		} else if(t > 0.8) {
+			if(!isEnabled()) {
+				toggleEnabled();
+			}
+		}
+		if(Math.abs(weight) < 0.001) weight = 0d;
+	}
+	
+	public boolean isEnabled(){
+		return enabled;
+	}
+	
+	public void setEnabled(boolean a){
+		enabled = a;
+	}
+	
+	public void toggleEnabled(){
+		enabled = !enabled;
+	}
+	
+	@Override
+	public int hashCode(){
+		int result;
+		long temp;
+		result = getFromNode().hashCode();
+		result = 31 * result + getToNode().hashCode();
+		result = 31 * result + getGeneID();
+		result = 31 * result + (isEnabled() ? 1 : 0);
+		temp = Double.doubleToLongBits(getWeight());
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + (isLargestNode() ? 1 : 0);
+		return result;
+	}
+	
+	@Override
+	public boolean equals(Object o){
+		if(this == o) return true;
+		if(o == null || getClass() != o.getClass()) return false;
+		
+		Gene gene = (Gene) o;
+		
+		if(getGeneID() != gene.getGeneID()) return false;
+		if(isEnabled() != gene.isEnabled()) return false;
+		if(Double.compare(gene.getWeight(), getWeight()) != 0) return false;
+		if(isLargestNode() != gene.isLargestNode()) return false;
+		if(!getFromNode().equals(gene.getFromNode())) return false;
+		return getToNode().equals(gene.getToNode());
+	}
+	
+	public int getGeneID(){
+		return geneID;
+	}
+	
+	public void setGeneID(int i){
+		geneID = i;
+	}
+	
+	public double getWeight(){
+		return weight;
+	}
+	
+	public Node getFromNode(){
+		return fromNode;
+	}
+	
+	public Node getToNode(){
+		return toNode;
+	}
+	
+	public boolean isLargestNode(){
+		return largestNode;
+	}
+	
+	public void setLargestNode(boolean largestNode){
+		this.largestNode = largestNode;
+	}
 }

@@ -28,166 +28,197 @@ package NEAT;
 
 import java.util.ArrayList;
 
-public class History {
-    private ArrayList<Gene> history;
-    
-    
-    /**
-     * Empty constructor, utilized during initial population creation
-     */
-    public History() {
-        history = new ArrayList<>();
-    }
-    
-    /**
-     * Constructor with provided history, used for cloning
-     */
-    public History(ArrayList<Gene> h) {
-        history = h;
-    }
-    
-    /**
-     * Copy function, probably not needed
-     * @return a copy of this listing of genes
-     */
-    public History copy() {
-        return new History(history);
-    }
-    
-    /**
-     * Add a new gene to the evolutionary history
-     * @param g the new gene to be added, typically a new connection between 2 existing nodes
-     */
-    public void addGeneInnovation(Gene g) {
-        history.add(g);
-    }
-    
-    /**
-     * Add two new genes to the evolutionary history, corresponding to the input and output genes of a new node
-     * @param n  the newly created node used to verify self-consistency
-     * @param g1 the gene leading into the new node
-     * @param g2 the gene leading out of the new node
-     */
-    public void addNodeInnovation(Node n, Gene g1, Gene g2) {
-        if (g1.getToNode().getID() != n.getID()) {
-            System.out.println("The provided gene \"g1\" does not connect with the provided node n");
-            return;
-        }
-        if (g2.getFromNode().getID() != n.getID()) {
-            System.out.println("The provided gene \"g2\" does not connect with the provided node n");
-        }
-        disableLargestNode();
-        g1.setLargestNode(true);
-        history.add(g1);
-        history.add(g2);
-    }
-    
-    /**
-     * Go through the list of genes and make sure the largestNode flag is disabled for all genes. Used as a new
-     * node innovation has been created and want to set that newNode to have the largest nodeID. In the entire
-     * history array, there should only be a single gene that has the largestNode flag enabled
-     */
-    public void disableLargestNode() {
-        for (Gene g : history) {
-            g.setLargestNode(false);
-        }
-    }
-    
-    /**
-     * Check if a "new" gene connection mutation is actually a unique new gene connection for the population. If it
-     * truly is unique, return -1, otherwise return the geneID of the existing innovation.
-     * @param a the fromNode for the new gene
-     * @param b the toNode for the new gene
-     * @return -1 if unique, the geneID of the exiting innovation if not.
-     */
-    public int containsGeneInnovation(Node a, Node b) {
-        for (Gene g : history) {
-            if (g.getFromNode().getID() == a.getID() && g.getToNode().getID() == b.getID()) return g.getGeneID();
-        }
-        return -1;
-    }
-    
-    /**
-     * Provided a randomly selected gene in an existing network, look through the nodes of each gene to see if any of
-     * those nodes replaced the selected gene. Note that we only need to look through toNodes, as the layer0 nodes
-     * don't have a replaced value (all -1). If there is a match, return that node's ID, otherwise if "will be" a new
-     * unique node innovation, return -1;
-     * @param g the randomly selected gene to be replaced
-     * @return the nodeID if this is not a unique new node, or -1 if it is unique
-     */
-    public int containsNodeInnovation(Gene g) {
-        Node temp;
-        for (Gene g1 : history) {
-            temp = g1.getToNode();
-            if (temp.getReplacedGeneID() == g.getGeneID()) {
-                return temp.getID();
-            }
-        }
-        return -1;
-    }
-    
-    /**
-     * Used when a "new" Node is not unique to assign values to the gene feeding that "new" node
-     * @param n the "new" node
-     * @return the geneID feeding that node
-     */
-    
-    //TODO need to rework this as many genes could be feeding into the same "new" node (just based on ID), but want to
-    // isolate specifically the gene that was replaced
-    public int getIDBeforeNode(Node n) {
-        for (Gene g : history) {
-            if (g.getToNode().getID() == n.getID()) return g.getGeneID();
-        }
-        return -1;
-    }
-    
-    /**
-     * Used when a "new" Node is not unique to assign values to the gene leaving that "new" node
-     * @param n the "new" node
-     * @return the geneID leaving that node
-     */
-    
-    //TODO need to rework this, as many genes could be leaving the same "new" node (just based on ID), but want to
-    // isolate specifically the gene that connects to the previous to-Node
-    public int getIDAfterNode(Node n) {
-        for (Gene g : history) {
-            if (g.getFromNode().getID() == n.getID()) return g.getGeneID();
-        }
-        return -1;
-    }
-    
-    @Override
-    
-    public int hashCode() {
-        return getHistory().hashCode();
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        
-        History history1 = (History) o;
-        
-        return getHistory().equals(history1.getHistory());
-    }
-    
-    public ArrayList<Gene> getHistory() {
-        return history;
-    }
-    
-    public void setHistory(ArrayList<Gene> history) {
-        this.history = history;
-    }
-    
-    public int getNextGeneID() {
-        return history.size();
-    }
-    
-    public int getNextNodeID() {
-        for (Gene g : history) {
-            if (g.isLargestNode()) return g.getToNode().getID() + 1;
-        }
-        return -1;
-    }
+/**
+ * The history is a population level recording of every gene and node connection
+ * that has occurred in the population. This allows for checking whether new
+ * mutations (topology changes) are unique. Because each gene is a connection
+ * between two defined and distinct nodes (in different layers), a listing of all
+ * genes ever created defines the population history. In actuality, the history
+ * is a listing of all unique node-pairs ever created. This history class is used
+ * for record-keeping when creating new nodes and new genes.
+ * <p>
+ * When a new node is created, it deactivates, but does not delete, an existing gene.
+ * Two new genes are inserted to connect this new node into the network. Therefore,
+ * this two-gene pair uniquely describes a node mutation, assuming that nodes can be
+ * distinguished from one another. This likely requires knowledge of the replaced gene
+ * so that the "location" of the new node in the network can be unambiguously determined.
+ * <p>
+ * When a new gene is created, it connects two existing nodes. It should be clear
+ * that if any other genes in the "history" share the same fromNode and toNode IDs,
+ * then the new gene is not unique. However, if this is a unique node-pair, this is
+ * a unique gene mutation and will be added to the history.
+ * <p>
+ * Individuals within the population can then be compared by determining how many
+ * missing and extra genes each individual has to the other (or to the history). It
+ * is likely that in late-stage evolution, some individuals will be missing entire
+ * "sections" of the population genome as the population may have diverged.
+ */
+public class History{
+	
+	private ArrayList<Gene> history;
+	
+	/**
+	 * Empty constructor, utilized during initial population creation
+	 */
+	public History(){
+		history = new ArrayList<>();
+	}
+	
+	/**
+	 * Constructor with provided history, used for cloning/copying
+	 */
+	public History(ArrayList<Gene> h){
+		history = h;
+	}
+	
+	/**
+	 * Copy function, probably not needed
+	 *
+	 * @return a copy of this listing of genes
+	 */
+	public History copy(){
+		return new History(history);
+	}
+	
+	/**
+	 * Add a new gene to the evolutionary history
+	 *
+	 * @param g the new gene to be added, typically a new connection between 2 existing nodes
+	 */
+	public void addGeneInnovation(Gene g){
+		history.add(g);
+	}
+	
+	/**
+	 * Add two new genes to the evolutionary history, corresponding to the input and output genes of a new node
+	 *
+	 * @param n  the newly created node, used to verify self-consistency
+	 * @param g1 the gene leading into the new node
+	 * @param g2 the gene leading out of the new node
+	 */
+	public void addNodeInnovation(Node n, Gene g1, Gene g2){
+		if(g1.getToNode().getID() != n.getID()) {
+			System.out.println("The provided gene \"g1\" does not connect with the provided node n");
+			return;
+		}
+		if(g2.getFromNode().getID() != n.getID()) {
+			System.out.println("The provided gene \"g2\" does not connect with the provided node n");
+		}
+		disableLargestNode();
+		g1.setLargestNode(true);
+		history.add(g1);
+		history.add(g2);
+	}
+	
+	/**
+	 * Go through the list of genes and make sure the largestNode flag is disabled for all genes. Used as a new
+	 * node innovation has been created and want to set that newNode to have the largest nodeID. In the entire
+	 * history array, there should only be a single gene that has the largestNode flag enabled
+	 */
+	private void disableLargestNode(){
+		for(Gene g : history) {
+			g.setLargestNode(false);
+		}
+	}
+	
+	/**
+	 * Check if a "new" gene connection mutation is actually a unique new gene connection for the population. If it
+	 * truly is unique, return -1, otherwise return the geneID of the existing innovation.
+	 *
+	 * @param a the fromNode for the new gene
+	 * @param b the toNode for the new gene
+	 * @return -1 if unique, the geneID of the exiting innovation if not.
+	 */
+	public int containsGeneInnovation(Node a, Node b){
+		for(Gene g : history) {
+			if(g.getFromNode().getID() == a.getID() && g.getToNode().getID() == b.getID()) return g.getGeneID();
+		}
+		return -1;
+	}
+	
+	/**
+	 * Provided a randomly selected gene in an existing network, look through the nodes of each gene to see if any of
+	 * those nodes replaced the selected gene. Note that we only need to look through toNodes, as the layer0 nodes
+	 * don't have a replaced value (all -1). If there is a match, return that node's ID, otherwise if "will be" a new
+	 * unique node innovation, return -1;
+	 *
+	 * @param g the randomly selected gene to be replaced
+	 * @return the nodeID if this is not a unique new node, or -1 if it is unique
+	 */
+	public int containsNodeInnovation(Gene g){
+		Node temp;
+		for(Gene g1 : history) {
+			temp = g1.getToNode();
+			if(temp.getReplacedGeneID() == g.getGeneID()) {
+				return temp.getID();
+			}
+		}
+		return -1;
+	}
+	
+	/**
+	 * Used when a "new" Node is not unique to assign values to the gene feeding that "new" node
+	 *
+	 * @param n the "new" node
+	 * @return the geneID feeding that node
+	 */
+	
+	//TODO need to rework this as many genes could be feeding into the same "new" node (just based on ID), but want to
+	// isolate specifically the gene that was replaced
+	public int getIDBeforeNode(Node n){
+		for(Gene g : history) {
+			if(g.getToNode().getID() == n.getID()) return g.getGeneID();
+		}
+		return -1;
+	}
+	
+	/**
+	 * Used when a "new" Node is not unique to assign values to the gene leaving that "new" node
+	 *
+	 * @param n the "new" node
+	 * @return the geneID leaving that node
+	 */
+	
+	//TODO need to rework this, as many genes could be leaving the same "new" node (just based on ID), but want to
+	// isolate specifically the gene that connects to the previous to-Node
+	public int getIDAfterNode(Node n){
+		for(Gene g : history) {
+			if(g.getFromNode().getID() == n.getID()) return g.getGeneID();
+		}
+		return -1;
+	}
+	
+	@Override
+	public int hashCode(){
+		return getHistory().hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object o){
+		if(this == o) return true;
+		if(o == null || getClass() != o.getClass()) return false;
+		
+		History history1 = (History) o;
+		
+		return getHistory().equals(history1.getHistory());
+	}
+	
+	public ArrayList<Gene> getHistory(){
+		return history;
+	}
+	
+	public void setHistory(ArrayList<Gene> history){
+		this.history = history;
+	}
+	
+	public int getNextGeneID(){
+		return history.size();
+	}
+	
+	public int getNextNodeID(){
+		for(Gene g : history) {
+			if(g.isLargestNode()) return g.getToNode().getID() + 1;
+		}
+		return -1;
+	}
 }
